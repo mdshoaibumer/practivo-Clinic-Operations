@@ -5,6 +5,7 @@ import (
 
 	"clinmitra/internal/models"
 	"clinmitra/internal/repository"
+	"clinmitra/internal/utils"
 )
 
 // --- Mock Repositories ---
@@ -94,7 +95,7 @@ func (m *mockPatientRepo) Create(patient *models.Patient) error {
 func (m *mockPatientRepo) FindByID(id string) (*models.Patient, error) {
 	p, ok := m.patients[id]
 	if !ok {
-		return nil, models.ErrRecordNotFound
+		return nil, utils.ErrNotFound
 	}
 	return p, nil
 }
@@ -109,7 +110,7 @@ func (m *mockPatientRepo) FindByPhone(phone string) (*models.Patient, error) {
 			return p, nil
 		}
 	}
-	return nil, models.ErrRecordNotFound
+	return nil, utils.ErrNotFound
 }
 func (m *mockPatientRepo) Count() (int64, error) { return int64(len(m.patients)), nil }
 
@@ -125,7 +126,7 @@ func (m *mockTreatmentRepo) Create(treatment *models.Treatment) error { return n
 func (m *mockTreatmentRepo) FindByID(id string) (*models.Treatment, error) {
 	t, ok := m.treatments[id]
 	if !ok {
-		return nil, models.ErrRecordNotFound
+		return nil, utils.ErrNotFound
 	}
 	return t, nil
 }

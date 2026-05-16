@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "VITE_USE_MOCKS=true npx playwright test",
+    "test:e2e:ui": "VITE_USE_MOCKS=true npx playwright test --ui",
+    "test:e2e:headed": "VITE_USE_MOCKS=true npx playwright test --headed"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
@@ -37,14 +42,18 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^25.8.0",
     "@types/react": "^18.2.56",
     "@types/react-dom": "^18.2.19",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.17",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3",
-    "vite": "^5.1.4"
+    "vite": "^5.1.4",
+    "vitest": "^4.1.6"
   }
 }

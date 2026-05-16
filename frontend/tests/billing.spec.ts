@@ -38,8 +38,10 @@ test.describe('Billing System', () => {
     // Check if the number 5000 is in there somewhere (ignoring commas/symbols)
     expect(text.replace(/[^0-9]/g, '')).toContain('5000');
 
-    // Save Invoice
+    // Save Invoice - clicks review button which shows confirmation
     await page.click('button:has-text("Create Invoice")');
+    // Confirm the invoice creation
+    await page.click('button:has-text("Confirm & Create Invoice")');
     await expect(page).toHaveURL(/\/billing\/inv-123/);
   });
 
