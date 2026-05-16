@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { useAuthStore } from '@/store/authStore'
 import { useSettingsStore } from '@/store/settingsStore'
@@ -36,14 +36,20 @@ export default function App() {
 
   useEffect(() => {
     async function init() {
-      // Wait for Wails bindings to be ready if they are not yet available
-      if (!window.go) {
-        let attempts = 0
-        while (!window.go && attempts < 10) {
-          await new Promise(resolve => setTimeout(resolve, 100))
-          attempts++
-        }
+      // Wait for Wails runtime to be ready
+      const waitForWails = (): Promise<void> => {
+        if (window.go) return Promise.resolve()
+        return new Promise((resolve) => {
+          const handler = () => resolve()
+          document.addEventListener('wails:loaded', handler, { once: true })
+          // Fallback: poll briefly in case event already fired
+          setTimeout(() => {
+            if (window.go) resolve()
+          }, 500)
+        })
       }
+
+      await waitForWails()
 
       if (window.go) {
         await checkSetup()
@@ -63,7 +69,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         {/* Public routes */}
         <Route path="/setup" element={
@@ -91,6 +97,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
       <Toaster />
-    </BrowserRouter>
+    </HashRouter>
   )
 }
