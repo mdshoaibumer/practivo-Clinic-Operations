@@ -21,7 +21,7 @@ export default function SetupWizard() {
     resolver: zodResolver(setupSchema),
     defaultValues: {
       gstEnabled: false,
-      invoicePrefix: 'PV',
+      invoicePrefix: 'CD',
     },
   })
 

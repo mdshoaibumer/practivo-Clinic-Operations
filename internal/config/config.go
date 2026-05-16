@@ -49,7 +49,7 @@ func NewConfig() (*Config, error) {
 }
 
 // getDataDir returns the platform-specific application data directory
-// (e.g., %APPDATA%/DentFlow on Windows).
+// (e.g., %APPDATA%/Clinmitra Dental on Windows).
 func getDataDir() (string, error) {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
