@@ -173,6 +173,9 @@ export default function Settings() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    setError('')
+    setMessage('')
+
     // Validate file type
     if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
       setError('Please select a PNG, JPG, or WebP image.')
@@ -204,6 +207,8 @@ export default function Settings() {
   }
 
   const handleRemoveLogo = async () => {
+    setError('')
+    setMessage('')
     try {
       await window.go.handler.SettingsHandler.RemoveLogo()
       setLogoPreview('')
@@ -265,6 +270,8 @@ export default function Settings() {
 
   const handleDeleteTreatment = async (id: string) => {
     if (!confirm('Remove this treatment from catalog?')) return
+    setError('')
+    setMessage('')
     try {
       await window.go.handler.SettingsHandler.DeleteTreatment(id)
       fetchTreatments()

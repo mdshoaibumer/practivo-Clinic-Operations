@@ -1,4 +1,4 @@
-import type { AuthResponse, PatientListResponse, InvoiceListResponse, CreatePatientInput, CreateAppointmentInput, CreateInvoiceInput, RecordPaymentInput, DashboardStats, DailyReport, MonthlyReport, SetupInput } from './api'
+import type { AuthResponse, PatientListResponse, InvoiceListResponse, CreatePatientInput, CreateAppointmentInput, CreateInvoiceInput, RecordPaymentInput, DashboardStats, DailyReport, MonthlyReport, SetupInput, CloudDriveInfo } from './api'
 import type { Patient, PatientTreatment, Appointment, Invoice, Payment, Treatment, ClinicSettings, BackupInfo } from './models'
 
 export {}
@@ -63,6 +63,8 @@ declare global {
         }
         BackupHandler: {
           CreateBackup(destinationDir: string): Promise<BackupInfo>
+          CreateCloudBackup(): Promise<BackupInfo>
+          DetectCloudDrives(): Promise<CloudDriveInfo[]>
           RestoreFromBackup(backupPath: string): Promise<void>
           VerifyBackup(filePath: string): Promise<boolean>
           ListBackups(): Promise<BackupInfo[]>

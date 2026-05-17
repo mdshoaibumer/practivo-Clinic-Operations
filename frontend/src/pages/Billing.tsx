@@ -28,7 +28,7 @@ export default function Billing() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [selectedPatient, setSelectedPatient] = useState('')
   const [items, setItems] = useState<(InvoiceItemInput & { key: string })[]>([])
-  const [discount, setDiscount] = useState(0)
+  const [discount, setDiscount] = useState('')
   const [formError, setFormError] = useState('')
   
   const [page, setPage] = useState(1)
@@ -63,7 +63,7 @@ export default function Billing() {
       setShowConfirm(false)
       setItems([])
       setSelectedPatient('')
-      setDiscount(0)
+      setDiscount('')
       navigate(`/billing/${invoice.id}`)
       toast({
         title: "Invoice Created",
@@ -161,7 +161,7 @@ export default function Billing() {
         unitPrice: rupeesToPaise(i.unitPrice),
         toothNumber: i.toothNumber,
       })),
-      discountPercent: discount,
+      discountPercent: parseFloat(discount) || 0,
       discountAmount: 0,
       notes: '',
     })
@@ -256,7 +256,7 @@ export default function Billing() {
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Discount %</Label>
-                <Input type="number" min={0} max={100} value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} />
+                <Input type="number" min={0} max={100} value={discount} onChange={(e) => setDiscount(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Subtotal</Label>
@@ -279,7 +279,7 @@ export default function Billing() {
         <InvoiceConfirmDialog
           patient={patients.find(p => p.id === selectedPatient)}
           items={items}
-          discount={discount}
+          discount={parseFloat(discount) || 0}
           treatments={treatments}
           subtotal={getSubtotal()}
           onConfirm={handleConfirmInvoice}

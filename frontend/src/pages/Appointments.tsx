@@ -55,12 +55,12 @@ export default function Appointments() {
     queryKey: ['appointments', viewMode, selectedDate],
     queryFn: async () => {
       if (viewMode === 'day') {
-        const res = await window.go.handler.AppointmentHandler.GetAppointmentsByDateRange(selectedDate, selectedDate)
+        const res = await window.go.handler.AppointmentHandler.GetAppointmentsByDate(selectedDate)
         return res || []
       } else {
         const weekStart = getWeekStart(selectedDate)
         const weekEnd = getWeekEnd(weekStart)
-        const res = await window.go.handler.AppointmentHandler.GetAppointmentsByDateRange(weekStart, weekEnd)
+        const res = await window.go.handler.AppointmentHandler.GetWeekAppointments(weekStart, weekEnd)
         return res || []
       }
     }

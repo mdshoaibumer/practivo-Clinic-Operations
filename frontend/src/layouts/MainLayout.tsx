@@ -61,7 +61,7 @@ export default function MainLayout() {
       const result = await window.go.handler.BackupHandler.CreateBackup("")
       toast({
         title: "Backup Successful",
-        description: `Saved to ${result.filepath}`,
+        description: `Saved to ${result.filePath}`,
       })
     } catch (err: any) {
       toast({
