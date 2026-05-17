@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useInvoiceStore } from '@/store/invoiceStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { usePatientStore } from '@/store/patientStore'
 import { formatCurrency, getStatusColor, formatDate, rupeesToPaise } from '@/lib/utils'
-import { INVOICE_STATUS_LABELS } from '@/lib/constants'
+import { INVOICE_STATUS_LABELS, PAGE_SIZE } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,11 +12,16 @@ import InvoiceConfirmDialog from '@/components/billing/InvoiceConfirmDialog'
 import { Plus, Trash2 } from 'lucide-react'
 import type { Treatment } from '@/types/models'
 import type { InvoiceItemInput } from '@/types/api'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useToast } from '@/components/ui/use-toast'
+import PageTransition from '@/components/PageTransition'
 
 export default function Billing() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { invoices, totalCount, page, statusFilter, isLoading, fetchInvoices, setPage, setStatusFilter } = useInvoiceStore()
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  
   const { treatments, fetchTreatments } = useSettingsStore()
   const { patients, fetchPatients } = usePatientStore()
   const [showForm, setShowForm] = useState(false)
@@ -26,6 +30,52 @@ export default function Billing() {
   const [items, setItems] = useState<(InvoiceItemInput & { key: string })[]>([])
   const [discount, setDiscount] = useState(0)
   const [formError, setFormError] = useState('')
+  
+  const [page, setPage] = useState(1)
+  const [statusFilter, setStatusFilter] = useState('')
+
+  // Fetch invoices using React Query
+  const { data: response, isLoading, isError } = useQuery({
+    queryKey: ['invoices', page, statusFilter],
+    queryFn: () => window.go.handler.InvoiceHandler.ListInvoices(page, PAGE_SIZE, statusFilter, "", "", "", ""),
+  })
+
+  const invoices = response?.invoices || []
+  const totalCount = response?.total || 0
+
+  useEffect(() => {
+    if (isError) {
+      toast({
+        variant: "destructive",
+        title: "Error fetching invoices",
+        description: "Could not load invoice data.",
+      })
+    }
+  }, [isError, toast])
+
+  // Mutation for creating invoice
+  const createInvoiceMutation = useMutation({
+    mutationFn: (data: any) => window.go.handler.InvoiceHandler.CreateInvoice(data),
+    onSuccess: (invoice) => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] })
+      setShowForm(false)
+      setShowConfirm(false)
+      setItems([])
+      setSelectedPatient('')
+      setDiscount(0)
+      navigate(`/billing/${invoice.id}`)
+      toast({
+        title: "Invoice Created",
+        description: "Invoice has been generated.",
+      })
+    },
+    onError: (err: any) => {
+      const message = typeof err === 'string' ? err : err.message || 'Failed to create invoice'
+      setFormError(message)
+      setShowConfirm(false)
+    }
+  })
 
   // Handle action=new from keyboard shortcut or global search
   useEffect(() => {
@@ -43,10 +93,6 @@ export default function Billing() {
       }
     }
   }, [searchParams])
-
-  useEffect(() => {
-    fetchInvoices()
-  }, [fetchInvoices, page, statusFilter])
 
   useEffect(() => {
     if (showForm) {
@@ -105,36 +151,24 @@ export default function Billing() {
     setShowConfirm(true)
   }
 
-  const handleConfirmInvoice = async () => {
-    try {
-      const invoice = await useInvoiceStore.getState().createInvoice({
-        patientId: selectedPatient,
-        items: items.map(i => ({
-          treatmentId: i.treatmentId,
-          description: i.description,
-          quantity: i.quantity,
-          unitPrice: rupeesToPaise(i.unitPrice),
-          toothNumber: i.toothNumber,
-        })),
-        discountPercent: discount,
-        discountAmount: 0,
-        notes: '',
-      })
-      setShowForm(false)
-      setShowConfirm(false)
-      setItems([])
-      setSelectedPatient('')
-      setDiscount(0)
-      navigate(`/billing/${invoice.id}`)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create invoice'
-      setFormError(message)
-      setShowConfirm(false)
-    }
+  const handleConfirmInvoice = () => {
+    createInvoiceMutation.mutate({
+      patientId: selectedPatient,
+      items: items.map(i => ({
+        treatmentId: i.treatmentId,
+        description: i.description,
+        quantity: i.quantity,
+        unitPrice: rupeesToPaise(i.unitPrice),
+        toothNumber: i.toothNumber,
+      })),
+      discountPercent: discount,
+      discountAmount: 0,
+      notes: '',
+    })
   }
 
   return (
-    <div className="space-y-6">
+    <PageTransition className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Billing</h1>
         <Button onClick={() => { setShowForm(!showForm); if (!showForm) addItem() }}>
@@ -231,7 +265,9 @@ export default function Billing() {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleCreateInvoice}>Create Invoice</Button>
+              <Button onClick={handleCreateInvoice} disabled={createInvoiceMutation.isPending}>
+                {createInvoiceMutation.isPending ? 'Creating...' : 'Create Invoice'}
+              </Button>
               <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
             </div>
           </CardContent>
@@ -286,7 +322,7 @@ export default function Billing() {
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.map((invoice) => (
+                  {invoices.map((invoice: any) => (
                     <tr key={invoice.id} className="border-b hover:bg-muted/30 cursor-pointer" onClick={() => navigate(`/billing/${invoice.id}`)}>
                       <td className="px-4 py-3 text-sm font-mono">{invoice.invoiceNumber}</td>
                       <td className="px-4 py-3 text-sm">{invoice.patient?.name || '-'}</td>
@@ -307,17 +343,17 @@ export default function Billing() {
         </CardContent>
       </Card>
 
-      {totalCount > 20 && (
+      {totalCount > PAGE_SIZE && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing {(page - 1) * 20 + 1} to {Math.min(page * 20, totalCount)} of {totalCount}
+            Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, totalCount)} of {totalCount}
           </p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</Button>
-            <Button variant="outline" size="sm" disabled={page * 20 >= totalCount} onClick={() => setPage(page + 1)}>Next</Button>
+            <Button variant="outline" size="sm" disabled={page * PAGE_SIZE >= totalCount} onClick={() => setPage(page + 1)}>Next</Button>
           </div>
         </div>
       )}
-    </div>
+    </PageTransition>
   )
 }

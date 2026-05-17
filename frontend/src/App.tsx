@@ -29,6 +29,18 @@ function SetupGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: true,
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+})
+
 export default function App() {
   const { checkSession } = useAuthStore()
   const { checkSetup, isSetupComplete } = useSettingsStore()
@@ -69,34 +81,36 @@ export default function App() {
   }
 
   return (
-    <HashRouter>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/setup" element={
-          isSetupComplete ? <Navigate to="/login" replace /> : <AuthLayout><SetupWizard /></AuthLayout>
-        } />
-        <Route path="/login" element={
-          <SetupGuard><AuthLayout><Login /></AuthLayout></SetupGuard>
-        } />
+    <QueryClientProvider client={queryClient}>
+      <HashRouter>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/setup" element={
+            isSetupComplete ? <Navigate to="/login" replace /> : <AuthLayout><SetupWizard /></AuthLayout>
+          } />
+          <Route path="/login" element={
+            <SetupGuard><AuthLayout><Login /></AuthLayout></SetupGuard>
+          } />
 
-        {/* Protected routes */}
-        <Route path="/" element={
-          <SetupGuard><ProtectedRoute><MainLayout /></ProtectedRoute></SetupGuard>
-        }>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="patients" element={<Patients />} />
-          <Route path="patients/:id" element={<PatientDetail />} />
-          <Route path="billing" element={<Billing />} />
-          <Route path="billing/:id" element={<InvoiceDetail />} />
-          <Route path="appointments" element={<Appointments />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="settings" element={<Settings />} />
-        </Route>
+          {/* Protected routes */}
+          <Route path="/" element={
+            <SetupGuard><ProtectedRoute><MainLayout /></ProtectedRoute></SetupGuard>
+          }>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="patients" element={<Patients />} />
+            <Route path="patients/:id" element={<PatientDetail />} />
+            <Route path="billing" element={<Billing />} />
+            <Route path="billing/:id" element={<InvoiceDetail />} />
+            <Route path="appointments" element={<Appointments />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
 
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-      <Toaster />
-    </HashRouter>
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+        <Toaster />
+      </HashRouter>
+    </QueryClientProvider>
   )
 }

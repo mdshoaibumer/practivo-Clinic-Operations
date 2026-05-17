@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useAppointmentStore } from '@/store/appointmentStore'
 import { usePatientStore } from '@/store/patientStore'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -15,6 +14,9 @@ import { DatePicker } from '@/components/ui/date-picker'
 import PatientAvatar from '@/components/PatientAvatar'
 import WeekView from '@/components/appointments/WeekView'
 import { Plus, ChevronLeft, ChevronRight, X, CheckCircle, CalendarDays, List } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useToast } from '@/components/ui/use-toast'
+import PageTransition from '@/components/PageTransition'
 
 type ViewMode = 'day' | 'week'
 
@@ -34,7 +36,9 @@ function getWeekEnd(startStr: string): string {
 
 export default function Appointments() {
   const [searchParams] = useSearchParams()
-  const { appointments, isLoading, fetchByDate, fetchWeek, createAppointment, cancelAppointment, completeAppointment } = useAppointmentStore()
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+
   const { patients, fetchPatients } = usePatientStore()
   const [selectedDate, setSelectedDate] = useState(getTodayDate())
   const [viewMode, setViewMode] = useState<ViewMode>('day')
@@ -46,22 +50,69 @@ export default function Appointments() {
     defaultValues: { date: selectedDate },
   })
 
+  // Fetch appointments based on view mode
+  const { data: appointments = [], isLoading, isError } = useQuery({
+    queryKey: ['appointments', viewMode, selectedDate],
+    queryFn: async () => {
+      if (viewMode === 'day') {
+        const res = await window.go.handler.AppointmentHandler.GetAppointmentsByDateRange(selectedDate, selectedDate)
+        return res || []
+      } else {
+        const weekStart = getWeekStart(selectedDate)
+        const weekEnd = getWeekEnd(weekStart)
+        const res = await window.go.handler.AppointmentHandler.GetAppointmentsByDateRange(weekStart, weekEnd)
+        return res || []
+      }
+    }
+  })
+
+  useEffect(() => {
+    if (isError) {
+      toast({
+        variant: "destructive",
+        title: "Error fetching appointments",
+        description: "Could not load appointment data.",
+      })
+    }
+  }, [isError, toast])
+
+  // Mutations
+  const createMutation = useMutation({
+    mutationFn: (data: any) => window.go.handler.AppointmentHandler.CreateAppointment(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] })
+      reset()
+      setShowForm(false)
+      toast({ title: "Appointment booked" })
+    },
+    onError: (err: any) => {
+      setFormError(typeof err === 'string' ? err : err.message || 'Failed to create appointment')
+    }
+  })
+
+  const cancelMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string, reason: string }) => window.go.handler.AppointmentHandler.CancelAppointment(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      toast({ title: "Appointment cancelled" })
+    }
+  })
+
+  const completeMutation = useMutation({
+    mutationFn: (id: string) => window.go.handler.AppointmentHandler.CompleteAppointment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] })
+      toast({ title: "Appointment marked as completed" })
+    }
+  })
+
   // Handle action=new from keyboard shortcut or global search
   useEffect(() => {
     if (searchParams.get('action') === 'new') {
       setShowForm(true)
     }
   }, [searchParams])
-
-  useEffect(() => {
-    if (viewMode === 'day') {
-      fetchByDate(selectedDate)
-    } else {
-      const weekStart = getWeekStart(selectedDate)
-      const weekEnd = getWeekEnd(weekStart)
-      fetchWeek(weekStart, weekEnd)
-    }
-  }, [selectedDate, viewMode, fetchByDate, fetchWeek])
 
   useEffect(() => {
     if (showForm) fetchPatients()
@@ -92,40 +143,33 @@ export default function Appointments() {
     setSelectedDate(d.toISOString().split('T')[0])
   }
 
-  const onSubmit = async (data: AppointmentFormData) => {
+  const onSubmit = (data: AppointmentFormData) => {
     setFormError('')
-    try {
-      await createAppointment({
-        patientId: data.patientId,
-        date: data.date,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        duration: data.duration || 30,
-        notes: data.notes || '',
-        purpose: data.purpose || '',
-      })
-      reset()
-      setShowForm(false)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create appointment'
-      setFormError(message)
-    }
+    createMutation.mutate({
+      patientId: data.patientId,
+      date: data.date,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      duration: data.duration || 30,
+      notes: data.notes || '',
+      purpose: data.purpose || '',
+    })
   }
 
-  const handleCancel = async (id: string) => {
+  const handleCancel = (id: string) => {
     if (confirm('Cancel this appointment?')) {
-      await cancelAppointment(id, 'Cancelled by user')
+      cancelMutation.mutate({ id, reason: 'Cancelled by user' })
     }
   }
 
-  const handleComplete = async (id: string) => {
-    await completeAppointment(id)
+  const handleComplete = (id: string) => {
+    completeMutation.mutate(id)
   }
 
   const isToday = selectedDate === getTodayDate()
 
   return (
-    <div className="space-y-6">
+    <PageTransition className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Appointments</h1>
         <div className="flex gap-2">
@@ -210,7 +254,9 @@ export default function Appointments() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button type="submit">Book</Button>
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? 'Booking...' : 'Book'}
+                </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
               </div>
             </form>
@@ -267,9 +313,9 @@ export default function Appointments() {
           ) : (
             <div className="divide-y">
               {appointments
-                .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                .map((apt) => (
-                <div key={apt.id} className="flex items-center justify-between p-4">
+                .sort((a: any, b: any) => a.startTime.localeCompare(b.startTime))
+                .map((apt: any) => (
+                <div key={apt.id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="text-center min-w-[60px]">
                       <p className="text-sm font-bold">{formatTime(apt.startTime)}</p>
@@ -306,6 +352,6 @@ export default function Appointments() {
         </CardContent>
       </Card>
       )}
-    </div>
+    </PageTransition>
   )
 }

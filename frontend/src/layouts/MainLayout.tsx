@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
@@ -18,12 +17,10 @@ import {
   Menu,
   ChevronLeft,
   Search,
+  DatabaseBackup,
 } from 'lucide-react'
-
-interface NavBadges {
-  appointments: number
-  outstanding: number
-}
+import { useQuery } from '@tanstack/react-query'
+import { useToast } from '@/components/ui/use-toast'
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, badgeKey: null },
@@ -38,30 +35,41 @@ export default function MainLayout() {
   const { user, logout } = useAuthStore()
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
   const navigate = useNavigate()
-  const [badges, setBadges] = useState<NavBadges>({ appointments: 0, outstanding: 0 })
+  const { toast } = useToast()
 
   useKeyboardShortcuts()
 
-  // Fetch badge counts
-  useEffect(() => {
-    async function loadBadges() {
-      try {
-        const stats = await window.go.handler.DashboardHandler.GetDashboardStats()
-        setBadges({
-          appointments: stats?.todayAppointments || 0,
-          outstanding: stats?.totalOutstanding > 0 ? 1 : 0, // just show dot indicator
-        })
-      } catch { /* ignore */ }
-    }
-    loadBadges()
-    // Refresh every 60 seconds
-    const interval = setInterval(loadBadges, 60000)
-    return () => clearInterval(interval)
-  }, [])
+  // Fetch badge counts using React Query
+  const { data: stats } = useQuery({
+    queryKey: ['dashboardStats'],
+    queryFn: () => window.go.handler.DashboardHandler.GetDashboardStats(),
+    refetchInterval: 60000, // Refresh every 60 seconds
+  })
+
+  const badges = {
+    appointments: stats?.todayAppointments || 0,
+    outstanding: (stats?.totalOutstanding || 0) > 0 ? 1 : 0,
+  }
 
   const handleLogout = async () => {
     await logout()
     navigate('/login')
+  }
+
+  const handleBackup = async () => {
+    try {
+      const result = await window.go.handler.BackupHandler.CreateBackup("")
+      toast({
+        title: "Backup Successful",
+        description: `Saved to ${result.filepath}`,
+      })
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Backup Failed",
+        description: typeof err === 'string' ? err : "Could not complete backup.",
+      })
+    }
   }
 
   return (
@@ -106,7 +114,7 @@ export default function MainLayout() {
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 p-2 space-y-1 mt-1">
+        <nav className="flex-1 p-2 space-y-1 mt-1 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
@@ -142,19 +150,32 @@ export default function MainLayout() {
           ))}
         </nav>
 
-        {/* User section */}
-        <div className="p-4 border-t">
+        {/* Footer Actions */}
+        <div className="p-4 border-t space-y-2">
           {!sidebarCollapsed && (
-            <div className="mb-2">
+            <div className="mb-4">
               <p className="text-sm font-medium truncate">{user?.fullName}</p>
               <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
             </div>
           )}
+          
+          <Button
+            variant="outline"
+            size={sidebarCollapsed ? "icon" : "sm"}
+            onClick={handleBackup}
+            className={cn("w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200", sidebarCollapsed && "justify-center")}
+            title="Backup Data"
+          >
+            <DatabaseBackup className="h-4 w-4" />
+            {!sidebarCollapsed && <span className="ml-2">Backup Data</span>}
+          </Button>
+
           <Button
             variant="ghost"
             size={sidebarCollapsed ? "icon" : "sm"}
             onClick={handleLogout}
-            className="w-full justify-start"
+            className={cn("w-full justify-start", sidebarCollapsed && "justify-center")}
+            title="Logout"
           >
             <LogOut className="h-4 w-4" />
             {!sidebarCollapsed && <span className="ml-2">Logout</span>}

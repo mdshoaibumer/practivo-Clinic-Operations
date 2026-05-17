@@ -1,35 +1,38 @@
-import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
-import type { DashboardStats } from '@/types/api'
-import type { Appointment } from '@/types/models'
 import { Users, Receipt, Calendar, IndianRupee, Plus, ArrowRight } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { useToast } from '@/components/ui/use-toast'
+import PageTransition from '@/components/PageTransition'
+import { useEffect } from 'react'
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([])
-  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+  const { toast } = useToast()
+
+  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
+    queryKey: ['dashboardStats'],
+    queryFn: () => window.go.handler.DashboardHandler.GetDashboardStats(),
+  })
+
+  const { data: todayAppointments = [], isLoading: aptLoading, error: aptError } = useQuery({
+    queryKey: ['todayAppointments'],
+    queryFn: () => window.go.handler.AppointmentHandler.GetTodayAppointments(),
+  })
 
   useEffect(() => {
-    async function loadDashboard() {
-      try {
-        const [dashStats, appointments] = await Promise.all([
-          window.go.handler.DashboardHandler.GetDashboardStats(),
-          window.go.handler.AppointmentHandler.GetTodayAppointments(),
-        ])
-        setStats(dashStats)
-        setTodayAppointments(appointments || [])
-      } catch (err) {
-        console.error('Failed to load dashboard:', err)
-      } finally {
-        setLoading(false)
-      }
+    if (statsError || aptError) {
+      toast({
+        variant: "destructive",
+        title: "Error fetching dashboard data",
+        description: "Please check your database connection or try again.",
+      })
     }
-    loadDashboard()
-  }, [])
+  }, [statsError, aptError, toast])
+
+  const loading = statsLoading || aptLoading
 
   if (loading) {
     return <div className="text-muted-foreground">Loading dashboard...</div>
@@ -40,7 +43,7 @@ export default function Dashboard() {
 
   if (isEmpty) {
     return (
-      <div className="space-y-6">
+      <PageTransition className="space-y-6">
         <h1 className="text-2xl font-bold">Welcome to Clinmitra Dental!</h1>
 
         <Card className="border-primary/20 bg-primary/5">
@@ -111,50 +114,50 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </PageTransition>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <PageTransition className="space-y-6">
       <h1 className="text-2xl font-bold">Dashboard</h1>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-gradient-to-br from-blue-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Today's Appointments</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.todayAppointments || 0}</div>
+            <div className="text-2xl font-bold text-blue-900">{stats?.todayAppointments || 0}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-green-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalPatients || 0}</div>
+            <div className="text-2xl font-bold text-green-900">{stats?.totalPatients || 0}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-indigo-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Today's Revenue</CardTitle>
-            <IndianRupee className="h-4 w-4 text-muted-foreground" />
+            <IndianRupee className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(stats?.todayRevenue || 0)}</div>
+            <div className="text-2xl font-bold text-indigo-900">{formatCurrency(stats?.todayRevenue || 0)}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-red-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Outstanding Dues</CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
+            <Receipt className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{formatCurrency(stats?.totalOutstanding || 0)}</div>
@@ -183,7 +186,7 @@ export default function Dashboard() {
           ) : (
             <div className="space-y-2">
               {todayAppointments.map((apt) => (
-                <div key={apt.id} className="flex items-center justify-between p-3 bg-muted rounded-md">
+                <div key={apt.id} className="flex items-center justify-between p-3 bg-muted rounded-md border border-border">
                   <div>
                     <p className="font-medium">{apt.patient?.name || 'Unknown Patient'}</p>
                     <p className="text-sm text-muted-foreground">{apt.purpose || 'General checkup'}</p>
@@ -198,6 +201,6 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageTransition>
   )
 }

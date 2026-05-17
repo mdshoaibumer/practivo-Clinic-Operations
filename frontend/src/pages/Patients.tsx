@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { usePatientStore } from '@/store/patientStore'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { patientSchema, type PatientFormData } from '@/lib/validators'
-import { GENDER_OPTIONS, BLOOD_GROUP_OPTIONS, INDIAN_STATES, INDIAN_CITIES } from '@/lib/constants'
+import { GENDER_OPTIONS, BLOOD_GROUP_OPTIONS, INDIAN_STATES, INDIAN_CITIES, PAGE_SIZE } from '@/lib/constants'
 import { useDebounce } from '@/lib/useDebounce'
 import { exportToCSV } from '@/lib/exportCSV'
 import { Button } from '@/components/ui/button'
@@ -13,20 +12,64 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import PatientAvatar from '@/components/PatientAvatar'
 import { Plus, Search, Download } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useToast } from '@/components/ui/use-toast'
+import PageTransition from '@/components/PageTransition'
 
 export default function Patients() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { patients, totalCount, searchQuery, page, isLoading, fetchPatients, setSearch, setPage } = usePatientStore()
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  
   const [showForm, setShowForm] = useState(false)
   const [formError, setFormError] = useState('')
-  const [localSearch, setLocalSearch] = useState(searchQuery)
-  const [selectedState, setSelectedState] = useState('')
+  const [localSearch, setLocalSearch] = useState('')
   const debouncedSearch = useDebounce(localSearch, 300)
+  const [page, setPage] = useState(1)
+  const [selectedState, setSelectedState] = useState('')
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<PatientFormData>({
     resolver: zodResolver(patientSchema),
     defaultValues: { gender: 'male' },
+  })
+
+  // React Query for patients list
+  const { data: response, isLoading, isError } = useQuery({
+    queryKey: ['patients', page, debouncedSearch],
+    queryFn: () => window.go.handler.PatientHandler.ListPatients(page, PAGE_SIZE, debouncedSearch),
+  })
+
+  const patients = response?.patients || []
+  const totalCount = response?.total || 0
+
+  useEffect(() => {
+    if (isError) {
+      toast({
+        variant: "destructive",
+        title: "Error fetching patients",
+        description: "Could not load patient data.",
+      })
+    }
+  }, [isError, toast])
+
+  // Mutation for creating a patient
+  const createPatientMutation = useMutation({
+    mutationFn: (data: any) => window.go.handler.PatientHandler.CreatePatient(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patients'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] })
+      reset()
+      setShowForm(false)
+      toast({
+        title: "Patient Created",
+        description: "Patient registered successfully.",
+      })
+    },
+    onError: (err: any) => {
+      const message = typeof err === 'string' ? err : err.message || 'Failed to create patient'
+      setFormError(message)
+    }
   })
 
   // Handle action=new from keyboard shortcut or global search
@@ -36,13 +79,10 @@ export default function Patients() {
     }
   }, [searchParams])
 
+  // Reset page when search changes
   useEffect(() => {
-    setSearch(debouncedSearch)
-  }, [debouncedSearch, setSearch])
-
-  useEffect(() => {
-    fetchPatients()
-  }, [fetchPatients, page, searchQuery])
+    setPage(1)
+  }, [debouncedSearch])
 
   // Close form on Escape
   useEffect(() => {
@@ -55,29 +95,22 @@ export default function Patients() {
     return () => window.removeEventListener('keydown', handleEsc)
   }, [showForm])
 
-  const onSubmit = async (data: PatientFormData) => {
+  const onSubmit = (data: PatientFormData) => {
     setFormError('')
-    try {
-      await usePatientStore.getState().createPatient({
-        name: data.name,
-        phone: data.phone,
-        email: data.email || '',
-        gender: data.gender,
-        age: data.age || 0,
-        dateOfBirth: data.dateOfBirth || '',
-        address: data.address || '',
-        city: data.city || '',
-        bloodGroup: data.bloodGroup || '',
-        medicalHistory: data.medicalHistory || '',
-        allergies: data.allergies || '',
-        notes: data.notes || '',
-      })
-      reset()
-      setShowForm(false)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to create patient'
-      setFormError(message)
-    }
+    createPatientMutation.mutate({
+      name: data.name,
+      phone: data.phone,
+      email: data.email || '',
+      gender: data.gender,
+      age: data.age || 0,
+      dateOfBirth: data.dateOfBirth || '',
+      address: data.address || '',
+      city: data.city || '',
+      bloodGroup: data.bloodGroup || '',
+      medicalHistory: data.medicalHistory || '',
+      allergies: data.allergies || '',
+      notes: data.notes || '',
+    })
   }
 
   const handleExportCSV = () => {
@@ -110,7 +143,7 @@ export default function Patients() {
   }
 
   return (
-    <div className="space-y-6">
+    <PageTransition className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Patients</h1>
         <div className="flex gap-2">
@@ -221,7 +254,9 @@ export default function Patients() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit">Save Patient</Button>
+                <Button type="submit" disabled={createPatientMutation.isPending}>
+                  {createPatientMutation.isPending ? 'Saving...' : 'Save Patient'}
+                </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
                 <span className="text-xs text-muted-foreground self-center ml-2">Press Esc to close</span>
               </div>
@@ -249,7 +284,7 @@ export default function Patients() {
             <div className="p-6 text-center text-muted-foreground">Loading...</div>
           ) : patients.length === 0 ? (
             <div className="p-6 text-center text-muted-foreground">
-              {searchQuery ? 'No patients found matching your search.' : 'No patients registered yet. Click "New Patient" to get started.'}
+              {debouncedSearch ? 'No patients found matching your search.' : 'No patients registered yet. Click "New Patient" to get started.'}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -265,7 +300,7 @@ export default function Patients() {
                   </tr>
                 </thead>
                 <tbody>
-                  {patients.map((patient) => (
+                  {patients.map((patient: any) => (
                     <tr key={patient.id} className="border-b hover:bg-muted/30 cursor-pointer" onClick={() => navigate(`/patients/${patient.id}`)}>
                       <td className="px-4 py-3 text-sm">
                         <div className="flex items-center gap-3">
@@ -292,17 +327,17 @@ export default function Patients() {
       </Card>
 
       {/* Pagination */}
-      {totalCount > 20 && (
+      {totalCount > PAGE_SIZE && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing {(page - 1) * 20 + 1} to {Math.min(page * 20, totalCount)} of {totalCount}
+            Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, totalCount)} of {totalCount}
           </p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</Button>
-            <Button variant="outline" size="sm" disabled={page * 20 >= totalCount} onClick={() => setPage(page + 1)}>Next</Button>
+            <Button variant="outline" size="sm" disabled={page * PAGE_SIZE >= totalCount} onClick={() => setPage(page + 1)}>Next</Button>
           </div>
         </div>
       )}
-    </div>
+    </PageTransition>
   )
 }
