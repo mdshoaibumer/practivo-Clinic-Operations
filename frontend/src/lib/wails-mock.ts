@@ -42,17 +42,30 @@ if (typeof window !== 'undefined') {
       GetClinicSettings: async () => {
         const logo = getSession('_clinicLogo', '');
         return {
+          id: 'clinic-1',
           clinicName: 'Clinmitra Test Clinic',
           doctorName: 'Dr. Test',
+          doctorQualification: 'BDS, MDS',
           phone: '9876543210',
           address: '123 Test Street',
+          city: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400001',
           email: 'test@clinic.com',
           gstEnabled: true,
-          gstin: '',
+          gstin: '27AAAAA0000A1Z5',
           invoicePrefix: 'TEST',
           gstRate: 18,
           logoBase64: logo,
           logoPath: '',
+          setupComplete: true,
+          autoBackup: true,
+          backupPath: './backups',
+          bankAccount: '1234567890',
+          accountName: 'Clinmitra Test Clinic',
+          bankName: 'Test Bank',
+          ifscCode: 'TEST0001234',
+          upiId: 'test@upi',
         };
       },
       UpdateClinicSettings: async (settings: unknown) => settings,
@@ -82,9 +95,15 @@ if (typeof window !== 'undefined') {
           { id: 't-1', name: 'Root Canal', code: 'RC', category: 'Endodontics', defaultPrice: 500000 },
           { id: 't-2', name: 'Cleaning', code: 'CLN', category: 'Preventive', defaultPrice: 100000 },
         ]) as Array<Record<string, unknown>>;
-        const newTreatment = { id: `t-${Date.now()}`, name, code, category, defaultPrice: price };
+        const newTreatment = { id: `t-${Date.now()}`, name, code, category, defaultPrice: price, isActive: true };
         setSession('_treatments', [...treatments, newTreatment]);
         return newTreatment;
+      },
+      UpdateTreatment: async (id: string, name: string, code: string, category: string, _desc: string, price: number) => {
+        const treatments = getSession('_treatments', []) as Array<Record<string, unknown>>;
+        const updated = treatments.map(t => t.id === id ? { ...t, name, code, category, defaultPrice: price } : t);
+        setSession('_treatments', updated);
+        return null;
       },
       DeleteTreatment: async (id: string) => {
         const treatments = getSession('_treatments', [

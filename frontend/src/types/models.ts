@@ -33,6 +33,8 @@ export interface ClinicSettings {
   bankName: string
   ifscCode: string
   upiId: string
+  createdAt: number
+  updatedAt: number
 }
 
 export interface Patient {
@@ -50,8 +52,8 @@ export interface Patient {
   allergies: string
   notes: string
   createdBy: string
-  createdAt: string
-  updatedAt: string
+  createdAt: number
+  updatedAt: number
 }
 
 export interface Treatment {
@@ -62,6 +64,8 @@ export interface Treatment {
   category: string
   description: string
   isActive: boolean
+  createdAt: number
+  updatedAt: number
 }
 
 export interface Appointment {
@@ -98,7 +102,8 @@ export interface Invoice {
   notes: string
   voidReason: string
   createdBy: string
-  createdAt: string
+  createdAt: number
+  updatedAt: number
   patient?: Patient
   items?: InvoiceItem[]
   payments?: Payment[]
@@ -125,7 +130,9 @@ export interface Payment {
   reference: string
   notes: string
   receivedBy: string
-  createdAt: string
+  createdAt: number
+  updatedAt: number
+  invoice?: Invoice
 }
 
 export interface PatientTreatment {
@@ -137,6 +144,8 @@ export interface PatientTreatment {
   toothNumber: string
   notes: string
   performedBy: string
+  createdAt: number
+  updatedAt: number
   treatment?: Treatment
 }
 
@@ -148,7 +157,7 @@ export interface AuditLog {
   entityId: string
   oldValue: string
   newValue: string
-  createdAt: string
+  createdAt: number
 }
 
 export interface BackupInfo {

@@ -15,10 +15,22 @@ export function formatCurrency(paise: number): string {
   }).format(rupees)
 }
 
-// Format date string for display
-export function formatDate(dateStr: string): string {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
+// Format date for display (handles string ISO dates or number timestamps)
+export function formatDate(dateVal: string | number | undefined): string {
+  if (!dateVal) return '-'
+  
+  let date: Date
+  if (typeof dateVal === 'number') {
+    // If the timestamp is in seconds (Go default), convert to milliseconds
+    // 10^12 is approx year 2001 in milliseconds, so anything less is likely seconds
+    const ms = dateVal < 10000000000 ? dateVal * 1000 : dateVal
+    date = new Date(ms)
+  } else {
+    date = new Date(dateVal)
+  }
+
+  if (isNaN(date.getTime())) return '-'
+
   return date.toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',

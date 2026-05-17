@@ -124,13 +124,18 @@ func TestPatientService_CreatePatient_Success(t *testing.T) {
 	patientRepo := newMockPatientRepoForService()
 
 	// Verify service can be constructed with all dependencies
-	_ = &PatientService{
-		patientRepo:          patientRepo,
-		patientTreatmentRepo: &mockPatientTreatmentRepoForService{},
-		invoiceRepo:          &mockInvoiceRepoForPatient{},
-		authService:          &AuthService{sessionManager: auth.NewSessionManager(8)},
-		auditService:         NewAuditService(&mockAuditRepoForPatientTests{}),
-		db:                   nil,
+	service := NewPatientService(
+		patientRepo,
+		&mockPatientTreatmentRepoForService{},
+		&mockInvoiceRepoForPatient{},
+		&AuthService{sessionManager: auth.NewSessionManager(8)},
+		NewAuditService(&mockAuditRepoForPatientTests{}),
+		nil,
+	)
+
+	// Verify the service was correctly assigned
+	if service.patientRepo == nil {
+		t.Fatal("service.patientRepo should not be nil")
 	}
 
 	input := CreatePatientInput{
@@ -167,7 +172,6 @@ func TestPatientService_CreatePatient_DuplicatePhone(t *testing.T) {
 	}
 
 	input := CreatePatientInput{
-		Name:  "New Patient",
 		Phone: "9876543210",
 	}
 
