@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"log/slog"
 	"math"
 	"strconv"
 	"strings"
@@ -122,15 +123,18 @@ func (s *InvoiceService) CreateInvoice(input CreateInvoiceInput) (*models.Invoic
 		amount := item.UnitPrice * int64(quantity)
 		subTotal += amount
 
-		invoiceItems[i] = models.InvoiceItem{
+		invItem := models.InvoiceItem{
 			BaseModel:   models.BaseModel{ID: uuid.New().String()},
-			TreatmentID: item.TreatmentID,
 			Description: item.Description,
 			Quantity:    quantity,
 			UnitPrice:   item.UnitPrice,
 			Amount:      amount,
 			ToothNumber: item.ToothNumber,
 		}
+		if item.TreatmentID != "" {
+			invItem.TreatmentID = &item.TreatmentID
+		}
+		invoiceItems[i] = invItem
 
 		// Build patient treatment history
 		if item.TreatmentID != "" {
@@ -223,10 +227,23 @@ func (s *InvoiceService) CreateInvoice(input CreateInvoiceInput) (*models.Invoic
 	})
 
 	if err != nil {
+		slog.Error("invoice creation transaction failed",
+			"patientId", input.PatientID,
+			"items", len(input.Items),
+			"subTotal", subTotal,
+			"error", err.Error(),
+		)
 		return nil, err
 	}
 
 	invoice.Items = invoiceItems
+	slog.Info("invoice created in service",
+		"invoiceId", invoice.ID,
+		"number", invoice.InvoiceNumber,
+		"patientId", input.PatientID,
+		"total", invoice.TotalAmount,
+		"items", len(invoiceItems),
+	)
 	s.auditService.LogAction(s.authService.GetCurrentUserID(), models.AuditCreate, "invoice", invoice.ID, nil, invoice)
 	return invoice, nil
 }
@@ -345,9 +362,22 @@ func (s *InvoiceService) RecordPayment(input RecordPaymentInput) (*models.Paymen
 	})
 
 	if err != nil {
+		slog.Error("payment recording transaction failed",
+			"invoiceId", input.InvoiceID,
+			"amount", input.Amount,
+			"method", input.Method,
+			"error", err.Error(),
+		)
 		return nil, err
 	}
 
+	slog.Info("payment recorded in service",
+		"paymentId", payment.ID,
+		"invoiceId", input.InvoiceID,
+		"amount", input.Amount,
+		"newStatus", invoice.Status,
+		"balance", invoice.BalanceAmount,
+	)
 	s.auditService.LogAction(s.authService.GetCurrentUserID(), models.AuditCreate, "payment", payment.ID, nil, payment)
 	return payment, nil
 }

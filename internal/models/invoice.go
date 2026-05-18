@@ -36,13 +36,13 @@ type Invoice struct {
 
 type InvoiceItem struct {
 	BaseModel
-	InvoiceID   string `gorm:"type:text;not null;index" json:"invoiceId"`
-	TreatmentID string `gorm:"type:text" json:"treatmentId"` // nullable for custom items
-	Description string `gorm:"type:text;not null" json:"description"`
-	Quantity    int    `gorm:"type:integer;not null;default:1" json:"quantity"`
-	UnitPrice   int64  `gorm:"type:integer;not null" json:"unitPrice"` // paise
-	Amount      int64  `gorm:"type:integer;not null" json:"amount"`    // paise (quantity * unitPrice)
-	ToothNumber string `gorm:"type:text" json:"toothNumber"`
+	InvoiceID   string  `gorm:"type:text;not null;index" json:"invoiceId"`
+	TreatmentID *string `gorm:"type:text" json:"treatmentId"` // nullable for custom items
+	Description string  `gorm:"type:text;not null" json:"description"`
+	Quantity    int     `gorm:"type:integer;not null;default:1" json:"quantity"`
+	UnitPrice   int64   `gorm:"type:integer;not null" json:"unitPrice"` // paise
+	Amount      int64   `gorm:"type:integer;not null" json:"amount"`    // paise (quantity * unitPrice)
+	ToothNumber string  `gorm:"type:text" json:"toothNumber"`
 
 	// Relationships
 	Treatment Treatment `gorm:"foreignKey:TreatmentID" json:"treatment,omitempty"`

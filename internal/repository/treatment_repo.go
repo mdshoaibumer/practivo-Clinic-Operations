@@ -25,7 +25,7 @@ func (r *treatmentRepo) FindByID(id string) (*models.Treatment, error) {
 	var treatment models.Treatment
 	err := r.db.Where("id = ?", id).First(&treatment).Error
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 	return &treatment, nil
 }
@@ -45,12 +45,12 @@ func (r *treatmentRepo) Delete(id string) error {
 func (r *treatmentRepo) ListActive() ([]models.Treatment, error) {
 	var treatments []models.Treatment
 	err := r.db.Where("is_active = ?", true).Order("category, name").Find(&treatments).Error
-	return treatments, err
+	return treatments, WrapError(err)
 }
 
 // ListAll returns all treatments (including inactive), sorted by category and name.
 func (r *treatmentRepo) ListAll() ([]models.Treatment, error) {
 	var treatments []models.Treatment
 	err := r.db.Order("category, name").Find(&treatments).Error
-	return treatments, err
+	return treatments, WrapError(err)
 }

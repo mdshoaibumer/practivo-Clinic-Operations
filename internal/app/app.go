@@ -62,7 +62,8 @@ func NewApplication() (*Application, error) {
 		return nil, fmt.Errorf("failed to open log file: %w", err)
 	}
 	logger := slog.New(slog.NewJSONHandler(logFile, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
+		Level:     slog.LevelDebug,
+		AddSource: true,
 	}))
 	slog.SetDefault(logger)
 

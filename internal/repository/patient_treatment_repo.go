@@ -33,5 +33,5 @@ func (r *patientTreatmentRepo) ListByPatient(patientID string) ([]models.Patient
 		Where("patient_id = ?", patientID).
 		Order("treatment_date DESC").
 		Find(&treatments).Error
-	return treatments, err
+	return treatments, WrapError(err)
 }

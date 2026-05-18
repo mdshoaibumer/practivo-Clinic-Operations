@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"fmt"
 
 	"clinmitra/internal/models"
@@ -64,7 +65,7 @@ func (r *invoiceRepo) List(page, pageSize int, filters InvoiceFilters) ([]models
 
 	err := query.Count(&total).Error
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, WrapError(err)
 	}
 
 	offset := (page - 1) * pageSize
@@ -73,7 +74,7 @@ func (r *invoiceRepo) List(page, pageSize int, filters InvoiceFilters) ([]models
 		Offset(offset).Limit(pageSize).
 		Find(&invoices).Error
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, WrapError(err)
 	}
 
 	return invoices, total, nil
@@ -87,7 +88,7 @@ func (r *invoiceRepo) ListByPatient(patientID string) ([]models.Invoice, error) 
 		Where("patient_id = ?", patientID).
 		Order("created_at DESC").
 		Find(&invoices).Error
-	return invoices, err
+	return invoices, WrapError(err)
 }
 
 // GetLastInvoiceNumber returns the latest invoice number matching the given
@@ -98,11 +99,11 @@ func (r *invoiceRepo) GetLastInvoiceNumber(prefix, yearMonth string) (string, er
 	err := r.db.Where("invoice_number LIKE ?", pattern).
 		Order("invoice_number DESC").
 		First(&invoice).Error
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return "", nil
 	}
 	if err != nil {
-		return "", err
+		return "", WrapError(err)
 	}
 	return invoice.InvoiceNumber, nil
 }
@@ -117,7 +118,7 @@ func (r *invoiceRepo) GetOutstandingByPatient(patientID string) (int64, error) {
 		Select("COALESCE(SUM(balance_amount), 0) as total").
 		Where("patient_id = ? AND status IN (?, ?)", patientID, models.InvoiceIssued, models.InvoicePartial).
 		Scan(&result).Error
-	return result.Total, err
+	return result.Total, WrapError(err)
 }
 
 // GetTotalOutstanding returns the system-wide total unpaid balance (in paise)
@@ -130,7 +131,7 @@ func (r *invoiceRepo) GetTotalOutstanding() (int64, error) {
 		Select("COALESCE(SUM(balance_amount), 0) as total").
 		Where("status IN (?, ?)", models.InvoiceIssued, models.InvoicePartial).
 		Scan(&result).Error
-	return result.Total, err
+	return result.Total, WrapError(err)
 }
 
 // GetRevenueByDateRange returns total payment amount (in paise) collected
@@ -143,5 +144,5 @@ func (r *invoiceRepo) GetRevenueByDateRange(startDate, endDate string) (int64, e
 		Select("COALESCE(SUM(amount), 0) as total").
 		Where("payment_date >= ? AND payment_date <= ?", startDate, endDate).
 		Scan(&result).Error
-	return result.Total, err
+	return result.Total, WrapError(err)
 }

@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"errors"
+
 	"clinmitra/internal/models"
 
 	"gorm.io/gorm"
@@ -59,7 +61,7 @@ func (r *appointmentRepo) ListByDate(date string) ([]models.Appointment, error) 
 		Where("appointment_date = ?", date).
 		Order("start_time ASC").
 		Find(&appointments).Error
-	return appointments, err
+	return appointments, WrapError(err)
 }
 
 // ListByDateRange returns all appointments between startDate and endDate
@@ -70,7 +72,7 @@ func (r *appointmentRepo) ListByDateRange(startDate, endDate string) ([]models.A
 		Where("appointment_date >= ? AND appointment_date <= ?", startDate, endDate).
 		Order("appointment_date ASC, start_time ASC").
 		Find(&appointments).Error
-	return appointments, err
+	return appointments, WrapError(err)
 }
 
 // ListByPatient returns all appointments for a patient, newest first.
@@ -79,7 +81,7 @@ func (r *appointmentRepo) ListByPatient(patientID string) ([]models.Appointment,
 	err := r.db.Where("patient_id = ?", patientID).
 		Order("appointment_date DESC, start_time DESC").
 		Find(&appointments).Error
-	return appointments, err
+	return appointments, WrapError(err)
 }
 
 // FindConflicting detects time-slot overlaps for scheduled appointments on a
@@ -95,11 +97,11 @@ func (r *appointmentRepo) FindConflicting(date, startTime, endTime, excludeID st
 	}
 
 	err := query.First(&appointment).Error
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 	return &appointment, nil
 }

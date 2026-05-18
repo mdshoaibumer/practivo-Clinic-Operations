@@ -31,7 +31,7 @@ func (r *auditRepo) ListByEntity(entityType, entityID string) ([]models.AuditLog
 	err := r.db.Where("entity_type = ? AND entity_id = ?", entityType, entityID).
 		Order("created_at DESC").
 		Find(&logs).Error
-	return logs, err
+	return logs, WrapError(err)
 }
 
 // ListByUser returns audit entries for a specific user, limited to the given
@@ -42,7 +42,7 @@ func (r *auditRepo) ListByUser(userID string, limit int) ([]models.AuditLog, err
 		Order("created_at DESC").
 		Limit(limit).
 		Find(&logs).Error
-	return logs, err
+	return logs, WrapError(err)
 }
 
 // ListRecent returns the most recent audit entries system-wide, up to the
@@ -50,5 +50,5 @@ func (r *auditRepo) ListByUser(userID string, limit int) ([]models.AuditLog, err
 func (r *auditRepo) ListRecent(limit int) ([]models.AuditLog, error) {
 	var logs []models.AuditLog
 	err := r.db.Order("created_at DESC").Limit(limit).Find(&logs).Error
-	return logs, err
+	return logs, WrapError(err)
 }

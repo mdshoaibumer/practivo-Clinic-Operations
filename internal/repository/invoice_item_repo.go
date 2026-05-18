@@ -24,5 +24,5 @@ func (r *invoiceItemRepo) CreateBatch(items []models.InvoiceItem) error {
 func (r *invoiceItemRepo) FindByInvoiceID(invoiceID string) ([]models.InvoiceItem, error) {
 	var items []models.InvoiceItem
 	err := r.db.Preload("Treatment").Where("invoice_id = ?", invoiceID).Find(&items).Error
-	return items, err
+	return items, WrapError(err)
 }

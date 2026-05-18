@@ -24,7 +24,7 @@ func (r *paymentRepo) Create(payment *models.Payment) error {
 func (r *paymentRepo) FindByInvoiceID(invoiceID string) ([]models.Payment, error) {
 	var payments []models.Payment
 	err := r.db.Where("invoice_id = ?", invoiceID).Order("payment_date DESC").Find(&payments).Error
-	return payments, err
+	return payments, WrapError(err)
 }
 
 // GetTotalByInvoice returns the sum of all payments (in paise) for an invoice.
@@ -36,7 +36,7 @@ func (r *paymentRepo) GetTotalByInvoice(invoiceID string) (int64, error) {
 		Select("COALESCE(SUM(amount), 0) as total").
 		Where("invoice_id = ?", invoiceID).
 		Scan(&result).Error
-	return result.Total, err
+	return result.Total, WrapError(err)
 }
 
 // GetCollectionByDate returns the total payment amount (in paise) for a single date.
@@ -48,7 +48,7 @@ func (r *paymentRepo) GetCollectionByDate(date string) (int64, error) {
 		Select("COALESCE(SUM(amount), 0) as total").
 		Where("payment_date = ?", date).
 		Scan(&result).Error
-	return result.Total, err
+	return result.Total, WrapError(err)
 }
 
 // GetCollectionByDateRange returns the total payment amount (in paise) within
@@ -61,7 +61,7 @@ func (r *paymentRepo) GetCollectionByDateRange(startDate, endDate string) (int64
 		Select("COALESCE(SUM(amount), 0) as total").
 		Where("payment_date >= ? AND payment_date <= ?", startDate, endDate).
 		Scan(&result).Error
-	return result.Total, err
+	return result.Total, WrapError(err)
 }
 
 // ListByDateRange returns all payments within a date range with Invoice and
@@ -72,5 +72,5 @@ func (r *paymentRepo) ListByDateRange(startDate, endDate string) ([]models.Payme
 		Where("payment_date >= ? AND payment_date <= ?", startDate, endDate).
 		Order("payment_date DESC").
 		Find(&payments).Error
-	return payments, err
+	return payments, WrapError(err)
 }

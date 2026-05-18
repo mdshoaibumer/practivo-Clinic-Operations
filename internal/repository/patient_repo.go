@@ -55,13 +55,13 @@ func (r *patientRepo) List(page, pageSize int, search string) ([]models.Patient,
 
 	err := query.Count(&total).Error
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, WrapError(err)
 	}
 
 	offset := (page - 1) * pageSize
 	err = query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&patients).Error
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, WrapError(err)
 	}
 
 	return patients, total, nil

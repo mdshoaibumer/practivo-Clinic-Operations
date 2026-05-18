@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { useAuthStore } from '@/store/authStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { useEffect, useState } from 'react'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 import MainLayout from '@/layouts/MainLayout'
 import AuthLayout from '@/layouts/AuthLayout'
@@ -78,36 +79,38 @@ export default function App() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <HashRouter>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/setup" element={
-            isSetupComplete ? <Navigate to="/login" replace /> : <AuthLayout><SetupWizard /></AuthLayout>
-          } />
-          <Route path="/login" element={
-            <SetupGuard><AuthLayout><Login /></AuthLayout></SetupGuard>
-          } />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <HashRouter>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/setup" element={
+              isSetupComplete ? <Navigate to="/login" replace /> : <AuthLayout><SetupWizard /></AuthLayout>
+            } />
+            <Route path="/login" element={
+              <SetupGuard><AuthLayout><Login /></AuthLayout></SetupGuard>
+            } />
 
-          {/* Protected routes */}
-          <Route path="/" element={
-            <SetupGuard><ProtectedRoute><MainLayout /></ProtectedRoute></SetupGuard>
-          }>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="patients" element={<Patients />} />
-            <Route path="patients/:id" element={<PatientDetail />} />
-            <Route path="billing" element={<Billing />} />
-            <Route path="billing/:id" element={<InvoiceDetail />} />
-            <Route path="appointments" element={<Appointments />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
+            {/* Protected routes */}
+            <Route path="/" element={
+              <SetupGuard><ProtectedRoute><MainLayout /></ProtectedRoute></SetupGuard>
+            }>
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+              <Route path="patients" element={<ErrorBoundary><Patients /></ErrorBoundary>} />
+              <Route path="patients/:id" element={<ErrorBoundary><PatientDetail /></ErrorBoundary>} />
+              <Route path="billing" element={<ErrorBoundary><Billing /></ErrorBoundary>} />
+              <Route path="billing/:id" element={<ErrorBoundary><InvoiceDetail /></ErrorBoundary>} />
+              <Route path="appointments" element={<ErrorBoundary><Appointments /></ErrorBoundary>} />
+              <Route path="reports" element={<ErrorBoundary><Reports /></ErrorBoundary>} />
+              <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-        <Toaster />
-      </HashRouter>
-    </QueryClientProvider>
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+          <Toaster />
+        </HashRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   )
 }

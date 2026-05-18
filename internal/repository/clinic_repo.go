@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"errors"
+
 	"clinmitra/internal/models"
 
 	"github.com/google/uuid"
@@ -16,13 +18,13 @@ func NewClinicRepository(db *gorm.DB) ClinicRepository {
 	return &clinicRepo{db: db}
 }
 
-// Get retrieves the single ClinicSettings row. Returns gorm.ErrRecordNotFound
+// Get retrieves the single ClinicSettings row. Returns utils.ErrNotFound
 // if setup has not been completed.
 func (r *clinicRepo) Get() (*models.ClinicSettings, error) {
 	var settings models.ClinicSettings
 	err := r.db.First(&settings).Error
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 	return &settings, nil
 }
@@ -36,11 +38,11 @@ func (r *clinicRepo) Upsert(settings *models.ClinicSettings) error {
 
 	var existing models.ClinicSettings
 	err := r.db.First(&existing).Error
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return r.db.Create(settings).Error
 	}
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	settings.ID = existing.ID
@@ -52,11 +54,11 @@ func (r *clinicRepo) Upsert(settings *models.ClinicSettings) error {
 func (r *clinicRepo) IsSetupComplete() (bool, error) {
 	var settings models.ClinicSettings
 	err := r.db.First(&settings).Error
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return false, nil
 	}
 	if err != nil {
-		return false, err
+		return false, WrapError(err)
 	}
 	return settings.SetupComplete, nil
 }

@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"log/slog"
+
 	"clinmitra/internal/models"
 	"clinmitra/internal/service"
 )
@@ -22,20 +24,36 @@ func NewPatientHandler(patientService *service.PatientService) *PatientHandler {
 
 // CreatePatient validates and creates a new patient record.
 func (h *PatientHandler) CreatePatient(input service.CreatePatientInput) (*models.Patient, error) {
+	slog.Info("creating patient", "name", input.Name, "phone", input.Phone)
 	result, err := h.patientService.CreatePatient(input)
-	return result, safeError(err)
+	if err != nil {
+		slog.Warn("create patient failed", "name", input.Name, "error", err.Error())
+		return nil, safeError(err)
+	}
+	slog.Info("patient created", "id", result.ID, "name", result.Name)
+	return result, nil
 }
 
 // UpdatePatient updates an existing patient record by ID.
 func (h *PatientHandler) UpdatePatient(id string, input service.CreatePatientInput) (*models.Patient, error) {
+	slog.Info("updating patient", "id", id, "name", input.Name)
 	result, err := h.patientService.UpdatePatient(id, input)
-	return result, safeError(err)
+	if err != nil {
+		slog.Warn("update patient failed", "id", id, "error", err.Error())
+		return nil, safeError(err)
+	}
+	slog.Info("patient updated", "id", id)
+	return result, nil
 }
 
 // GetPatient retrieves a single patient by ID.
 func (h *PatientHandler) GetPatient(id string) (*models.Patient, error) {
 	result, err := h.patientService.GetPatient(id)
-	return result, safeError(err)
+	if err != nil {
+		slog.Debug("get patient failed", "id", id, "error", err.Error())
+		return nil, safeError(err)
+	}
+	return result, nil
 }
 
 // ListPatients returns a paginated, optionally filtered list of patients.
@@ -43,12 +61,23 @@ func (h *PatientHandler) ListPatients(page, pageSize int, search string) (*servi
 	page, pageSize = sanitizePagination(page, pageSize)
 	search = sanitizeSearch(search)
 	result, err := h.patientService.ListPatients(page, pageSize, search)
-	return result, safeError(err)
+	if err != nil {
+		slog.Error("list patients failed", "page", page, "search", search, "error", err.Error())
+		return nil, safeError(err)
+	}
+	return result, nil
 }
 
 // DeletePatient soft-deletes a patient by ID (blocked if unpaid invoices exist).
 func (h *PatientHandler) DeletePatient(id string) error {
-	return safeError(h.patientService.DeletePatient(id))
+	slog.Info("deleting patient", "id", id)
+	err := h.patientService.DeletePatient(id)
+	if err != nil {
+		slog.Warn("delete patient failed", "id", id, "error", err.Error())
+		return safeError(err)
+	}
+	slog.Info("patient deleted", "id", id)
+	return nil
 }
 
 // GetPatientHistory returns the treatment history for a patient.

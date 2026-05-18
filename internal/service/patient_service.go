@@ -1,6 +1,8 @@
 package service
 
 import (
+	"log/slog"
+
 	"clinmitra/internal/models"
 	"clinmitra/internal/repository"
 	"clinmitra/internal/utils"
@@ -113,6 +115,7 @@ func (s *PatientService) CreatePatient(input CreatePatientInput) (*models.Patien
 		return nil
 	})
 	if err != nil {
+		slog.Error("patient creation transaction failed", "name", input.Name, "phone", cleanedPhone, "error", err.Error())
 		return nil, err
 	}
 
@@ -179,6 +182,7 @@ func (s *PatientService) UpdatePatient(id string, input CreatePatientInput) (*mo
 		}).Error
 	})
 	if err != nil {
+		slog.Error("patient update transaction failed", "id", id, "error", err.Error())
 		return nil, err
 	}
 

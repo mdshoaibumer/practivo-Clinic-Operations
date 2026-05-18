@@ -1,6 +1,8 @@
 package service
 
 import (
+	"log/slog"
+
 	"clinmitra/internal/models"
 	"clinmitra/internal/repository"
 	"clinmitra/internal/utils"
@@ -101,6 +103,12 @@ func (s *AppointmentService) CreateAppointment(input CreateAppointmentInput) (*m
 		return tx.Create(appointment).Error
 	})
 	if err != nil {
+		slog.Error("appointment creation transaction failed",
+			"patientId", input.PatientID,
+			"date", input.Date,
+			"startTime", input.StartTime,
+			"error", err.Error(),
+		)
 		return nil, err
 	}
 

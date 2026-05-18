@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"fmt"
+	"log/slog"
+
 	"clinmitra/internal/models"
 	"clinmitra/internal/service"
-	"fmt"
 )
 
 // MaxLogoSize is the maximum allowed size for a logo in bytes (512KB).
@@ -27,7 +29,14 @@ func (h *SettingsHandler) IsSetupComplete() (bool, error) {
 // CompleteSetup runs the first-time setup wizard: creates the admin user
 // and saves clinic settings. Can only be called once.
 func (h *SettingsHandler) CompleteSetup(input service.SetupInput) error {
-	return safeError(h.settingsService.CompleteSetup(input))
+	slog.Info("completing initial setup")
+	err := h.settingsService.CompleteSetup(input)
+	if err != nil {
+		slog.Warn("setup failed", "error", err.Error())
+		return safeError(err)
+	}
+	slog.Info("initial setup completed successfully")
+	return nil
 }
 
 // GetClinicSettings returns the current clinic configuration.
@@ -55,18 +64,38 @@ func (h *SettingsHandler) ListAllTreatments() ([]models.Treatment, error) {
 
 // CreateTreatment adds a new dental treatment/procedure to the system.
 func (h *SettingsHandler) CreateTreatment(name, code, category, description string, defaultPrice int64) (*models.Treatment, error) {
+	slog.Info("creating treatment", "name", name, "code", code, "category", category)
 	result, err := h.settingsService.CreateTreatment(name, code, category, description, defaultPrice)
-	return result, safeError(err)
+	if err != nil {
+		slog.Warn("create treatment failed", "name", name, "error", err.Error())
+		return nil, safeError(err)
+	}
+	slog.Info("treatment created", "id", result.ID, "name", name)
+	return result, nil
 }
 
 // UpdateTreatment modifies an existing treatment's details.
 func (h *SettingsHandler) UpdateTreatment(id, name, code, category, description string, defaultPrice int64) error {
-	return safeError(h.settingsService.UpdateTreatment(id, name, code, category, description, defaultPrice))
+	slog.Info("updating treatment", "id", id, "name", name)
+	err := h.settingsService.UpdateTreatment(id, name, code, category, description, defaultPrice)
+	if err != nil {
+		slog.Warn("update treatment failed", "id", id, "error", err.Error())
+		return safeError(err)
+	}
+	slog.Info("treatment updated", "id", id)
+	return nil
 }
 
 // DeleteTreatment soft-deletes a treatment (marks as inactive).
 func (h *SettingsHandler) DeleteTreatment(id string) error {
-	return safeError(h.settingsService.DeleteTreatment(id))
+	slog.Info("deleting treatment", "id", id)
+	err := h.settingsService.DeleteTreatment(id)
+	if err != nil {
+		slog.Warn("delete treatment failed", "id", id, "error", err.Error())
+		return safeError(err)
+	}
+	slog.Info("treatment deleted", "id", id)
+	return nil
 }
 
 // UploadLogo saves a base64-encoded logo image to clinic settings.
