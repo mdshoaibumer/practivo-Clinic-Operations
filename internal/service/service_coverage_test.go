@@ -11,6 +11,7 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // setupCoverageStack sets up a full service stack for coverage tests,
@@ -26,7 +27,9 @@ func setupCoverageStack(t *testing.T) (
 ) {
 	t.Helper()
 	dsn := "file:" + uuid.New().String() + "?mode=memory&cache=shared"
-	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}

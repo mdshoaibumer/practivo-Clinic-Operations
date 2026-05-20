@@ -12,6 +12,7 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // setupFreshDB creates a fresh in-memory SQLite database with all tables,
@@ -21,7 +22,9 @@ func setupFreshDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	// Unique name per test so parallel tests don't collide
 	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared&_pragma=foreign_keys(ON)&_pragma=busy_timeout(10000)", uuid.New().String())
-	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
 		t.Fatalf("failed to open test db: %v", err)
 	}
