@@ -308,7 +308,7 @@ func TestE2E_FullClinicWorkflow(t *testing.T) {
 		// Create appointment for patient 1
 		appt, err := appointmentService.CreateAppointment(CreateAppointmentInput{
 			PatientID: patient1ID,
-			Date:      "2026-05-20",
+			Date:      "2026-12-15",
 			StartTime: "10:00",
 			EndTime:   "10:30",
 			Duration:  30,
@@ -326,7 +326,7 @@ func TestE2E_FullClinicWorkflow(t *testing.T) {
 		// Create non-conflicting appointment same day
 		_, err = appointmentService.CreateAppointment(CreateAppointmentInput{
 			PatientID: patient2ID,
-			Date:      "2026-05-20",
+			Date:      "2026-12-15",
 			StartTime: "11:00",
 			EndTime:   "11:30",
 			Duration:  30,
@@ -339,7 +339,7 @@ func TestE2E_FullClinicWorkflow(t *testing.T) {
 		// Conflicting time slot should fail
 		_, err = appointmentService.CreateAppointment(CreateAppointmentInput{
 			PatientID: patient2ID,
-			Date:      "2026-05-20",
+			Date:      "2026-12-15",
 			StartTime: "10:15",
 			EndTime:   "10:45",
 			Duration:  30,
@@ -349,7 +349,7 @@ func TestE2E_FullClinicWorkflow(t *testing.T) {
 			t.Fatal("expected conflict error for overlapping time slot")
 		}
 
-		// Verify today's appointments (none for today, our appts are on 2026-05-20)
+		// Verify today's appointments (none for today, our appts are on 2026-12-15)
 		todayAppts, err := appointmentService.GetTodayAppointments()
 		if err != nil {
 			t.Fatalf("GetTodayAppointments error: %v", err)
@@ -359,12 +359,12 @@ func TestE2E_FullClinicWorkflow(t *testing.T) {
 		}
 
 		// Get appointments by date
-		dateAppts, err := appointmentService.GetAppointmentsByDate("2026-05-20")
+		dateAppts, err := appointmentService.GetAppointmentsByDate("2026-12-15")
 		if err != nil {
 			t.Fatalf("GetAppointmentsByDate error: %v", err)
 		}
 		if len(dateAppts) != 2 {
-			t.Errorf("expected 2 appointments on 2026-05-20, got: %d", len(dateAppts))
+			t.Errorf("expected 2 appointments on 2026-12-15, got: %d", len(dateAppts))
 		}
 	})
 
