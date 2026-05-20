@@ -102,7 +102,7 @@ func (m *mockInvoiceRepoForPatient) GetLastInvoiceNumber(prefix, yearMonth strin
 func (m *mockInvoiceRepoForPatient) GetOutstandingByPatient(patientID string) (int64, error) {
 	return 0, nil
 }
-func (m *mockInvoiceRepoForPatient) GetTotalOutstanding() (int64, error)                  { return 0, nil }
+func (m *mockInvoiceRepoForPatient) GetTotalOutstanding() (int64, error)              { return 0, nil }
 func (m *mockInvoiceRepoForPatient) GetRevenueByDateRange(s, e string) (int64, error) { return 0, nil }
 
 type mockAuditRepoForPatientTests struct{}

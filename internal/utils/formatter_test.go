@@ -40,7 +40,7 @@ func TestFormatDate(t *testing.T) {
 		{"2026-12-25", "25 Dec 2026"},
 		{"2026-05-20", "20 May 2026"},
 		{"invalid-date", "invalid-date"}, // returns input on parse error
-		{"", ""},                          // empty returns empty
+		{"", ""},                         // empty returns empty
 		{"2026-02-28", "28 Feb 2026"},
 	}
 

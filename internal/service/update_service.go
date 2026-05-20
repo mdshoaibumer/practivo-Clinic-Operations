@@ -27,11 +27,11 @@ type UpdateInfo struct {
 
 // GitHubRelease represents the GitHub API response for a release.
 type GitHubRelease struct {
-	TagName     string         `json:"tag_name"`
-	Name        string         `json:"name"`
-	Body        string         `json:"body"`
-	PublishedAt string         `json:"published_at"`
-	Assets      []GitHubAsset  `json:"assets"`
+	TagName     string        `json:"tag_name"`
+	Name        string        `json:"name"`
+	Body        string        `json:"body"`
+	PublishedAt string        `json:"published_at"`
+	Assets      []GitHubAsset `json:"assets"`
 }
 
 // GitHubAsset represents a downloadable asset in a release.
