@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-05-21
+
 ### Added
-- Auto-update checker via GitHub Releases API
-- Comprehensive test suite (86% auth, 94% repository, 77% service, 76% handler coverage)
-- Cloud backup support (OneDrive/Google Drive detection)
+- About tab in Settings with app version display
+- In-app update checker (checks GitHub Releases, one-click download & install)
+- Toast notifications for update status (success/failure)
+- Loading spinners with animated icons during update operations
+- 12 unit tests for About tab component
+
+### Improved
+- Accessibility: ARIA attributes (aria-busy, aria-live, role, aria-label) on update UI
+- Better error messages for network failures during update check
 
 ### Fixed
 - Phone validation for "91" prefix formats (091, 0091, spaces, dashes)
