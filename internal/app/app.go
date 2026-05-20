@@ -30,6 +30,7 @@ type Application struct {
 	InvoiceHandler     *handler.InvoiceHandler
 	DashboardHandler   *handler.DashboardHandler
 	BackupHandler      *handler.BackupHandler
+	UpdateHandler      *handler.UpdateHandler
 
 	// Services (for shutdown hooks)
 	backupService *service.BackupService
@@ -108,6 +109,7 @@ func NewApplication() (*Application, error) {
 	invoiceService := service.NewInvoiceService(invoiceRepo, invoiceItemRepo, paymentRepo, patientRepo, treatmentRepo, clinicRepo, patientTreatmentRepo, authService, auditService, database)
 	dashboardService := service.NewDashboardService(invoiceRepo, paymentRepo, appointmentRepo, patientRepo)
 	backupService := service.NewBackupService(database, cfg, authService, auditService, clinicRepo)
+	updateService := service.NewUpdateService(cfg)
 
 	// Initialize handlers
 	app := &Application{
@@ -121,6 +123,7 @@ func NewApplication() (*Application, error) {
 		InvoiceHandler:     handler.NewInvoiceHandler(invoiceService),
 		DashboardHandler:   handler.NewDashboardHandler(dashboardService),
 		BackupHandler:      handler.NewBackupHandler(backupService),
+		UpdateHandler:      handler.NewUpdateHandler(updateService),
 		backupService:      backupService,
 	}
 
@@ -167,6 +170,7 @@ func (a *Application) GetBindings() []interface{} {
 		a.InvoiceHandler,
 		a.DashboardHandler,
 		a.BackupHandler,
+		a.UpdateHandler,
 	}
 }
 
