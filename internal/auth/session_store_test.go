@@ -149,6 +149,89 @@ func TestSessionStore_CorruptFile(t *testing.T) {
 	}
 }
 
+func TestSessionStore_EncryptionAtRest(t *testing.T) {
+	tmpDir := t.TempDir()
+	store := NewSessionStore(tmpDir)
+
+	session := &Session{
+		Token:     "secret-token-xyz",
+		UserID:    "user-1",
+		Username:  "admin",
+		FullName:  "Admin",
+		Role:      models.RoleAdmin,
+		ExpiresAt: time.Now().Add(8 * time.Hour),
+	}
+
+	if err := store.Save(session); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	// Read raw file — should NOT contain the token in plaintext
+	filePath := filepath.Join(tmpDir, "session.json")
+	raw, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("Failed to read file: %v", err)
+	}
+
+	rawStr := string(raw)
+	if contains(rawStr, "secret-token-xyz") {
+		t.Error("Session file contains token in plaintext — encryption not working")
+	}
+	if contains(rawStr, "admin") {
+		t.Error("Session file contains username in plaintext — encryption not working")
+	}
+
+	// But Load should still decrypt successfully
+	loaded := store.Load()
+	if loaded == nil {
+		t.Fatal("Load returned nil after encrypted save")
+	}
+	if loaded.Token != "secret-token-xyz" {
+		t.Errorf("Token mismatch after decryption: got %s", loaded.Token)
+	}
+}
+
+func TestSessionStore_DifferentKeyCannotDecrypt(t *testing.T) {
+	tmpDir := t.TempDir()
+	store := NewSessionStore(tmpDir)
+
+	session := &Session{
+		Token:     "token-123",
+		UserID:    "user-1",
+		Username:  "admin",
+		FullName:  "Admin",
+		Role:      models.RoleAdmin,
+		ExpiresAt: time.Now().Add(8 * time.Hour),
+	}
+
+	if err := store.Save(session); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	// Create a store with a different data dir (different key)
+	otherStore := NewSessionStore(t.TempDir())
+	otherStore.filePath = filepath.Join(tmpDir, "session.json")
+
+	// Should not be able to load (decryption will fail, falls back to JSON parse which also fails)
+	loaded := otherStore.Load()
+	if loaded != nil {
+		t.Error("Expected nil when loading with wrong key")
+	}
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && len(substr) > 0 && stringContains(s, substr)
+}
+
+func stringContains(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
+
 func TestSessionManager_RestoreSession(t *testing.T) {
 	sm := NewSessionManager(8)
 

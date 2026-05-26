@@ -413,6 +413,9 @@ export namespace models {
 	    bankName: string;
 	    ifscCode: string;
 	    upiId: string;
+	    whatsAppEnabled: boolean;
+	    whatsAppWelcomeTemplate: string;
+	    whatsAppInvoiceTemplate: string;
 	    createdAt: number;
 	    updatedAt: number;
 	
@@ -448,6 +451,9 @@ export namespace models {
 	        this.bankName = source["bankName"];
 	        this.ifscCode = source["ifscCode"];
 	        this.upiId = source["upiId"];
+	        this.whatsAppEnabled = source["whatsAppEnabled"];
+	        this.whatsAppWelcomeTemplate = source["whatsAppWelcomeTemplate"];
+	        this.whatsAppInvoiceTemplate = source["whatsAppInvoiceTemplate"];
 	        this.createdAt = source["createdAt"];
 	        this.updatedAt = source["updatedAt"];
 	    }
@@ -899,11 +905,11 @@ export namespace service {
 	    downloadURL: string;
 	    releaseNotes: string;
 	    publishedAt: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new UpdateInfo(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.available = source["available"];
@@ -912,6 +918,43 @@ export namespace service {
 	        this.downloadURL = source["downloadURL"];
 	        this.releaseNotes = source["releaseNotes"];
 	        this.publishedAt = source["publishedAt"];
+	    }
+	}
+	
+	export class WhatsAppMessageResult {
+	    phone: string;
+	    message: string;
+	    whatsAppUrl: string;
+	    webUrl: string;
+	    isDesktopPresent: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new WhatsAppMessageResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.phone = source["phone"];
+	        this.message = source["message"];
+	        this.whatsAppUrl = source["whatsAppUrl"];
+	        this.webUrl = source["webUrl"];
+	        this.isDesktopPresent = source["isDesktopPresent"];
+	    }
+	}
+	export class WhatsAppTemplates {
+	    welcomeTemplate: string;
+	    invoiceTemplate: string;
+	    enabled: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new WhatsAppTemplates(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.welcomeTemplate = source["welcomeTemplate"];
+	        this.invoiceTemplate = source["invoiceTemplate"];
+	        this.enabled = source["enabled"];
 	    }
 	}
 

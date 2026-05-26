@@ -9,17 +9,17 @@ import {
 
 describe('loginSchema', () => {
   it('accepts valid credentials', () => {
-    const result = loginSchema.safeParse({ username: 'admin', password: 'secret123' })
+    const result = loginSchema.safeParse({ username: 'admin', password: 'Secret12' })
     expect(result.success).toBe(true)
   })
 
   it('rejects short username', () => {
-    const result = loginSchema.safeParse({ username: 'ab', password: 'secret123' })
+    const result = loginSchema.safeParse({ username: 'ab', password: 'Secret12' })
     expect(result.success).toBe(false)
   })
 
   it('rejects short password', () => {
-    const result = loginSchema.safeParse({ username: 'admin', password: '12345' })
+    const result = loginSchema.safeParse({ username: 'admin', password: 'Short1' })
     expect(result.success).toBe(false)
   })
 
@@ -162,11 +162,11 @@ describe('paymentSchema', () => {
 })
 
 describe('changePasswordSchema', () => {
-  it('accepts matching passwords', () => {
+  it('accepts matching passwords with complexity', () => {
     const result = changePasswordSchema.safeParse({
       oldPassword: 'current123',
-      newPassword: 'newpass123',
-      confirmPassword: 'newpass123',
+      newPassword: 'NewPass1x',
+      confirmPassword: 'NewPass1x',
     })
     expect(result.success).toBe(true)
   })
@@ -174,8 +174,8 @@ describe('changePasswordSchema', () => {
   it('rejects mismatched passwords', () => {
     const result = changePasswordSchema.safeParse({
       oldPassword: 'current123',
-      newPassword: 'newpass123',
-      confirmPassword: 'different',
+      newPassword: 'NewPass1x',
+      confirmPassword: 'Different1',
     })
     expect(result.success).toBe(false)
   })
@@ -183,8 +183,35 @@ describe('changePasswordSchema', () => {
   it('rejects short new password', () => {
     const result = changePasswordSchema.safeParse({
       oldPassword: 'current123',
-      newPassword: '12345',
-      confirmPassword: '12345',
+      newPassword: 'Short1',
+      confirmPassword: 'Short1',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects password without uppercase', () => {
+    const result = changePasswordSchema.safeParse({
+      oldPassword: 'current123',
+      newPassword: 'alllower1',
+      confirmPassword: 'alllower1',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects password without lowercase', () => {
+    const result = changePasswordSchema.safeParse({
+      oldPassword: 'current123',
+      newPassword: 'ALLUPPER1',
+      confirmPassword: 'ALLUPPER1',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects password without digit', () => {
+    const result = changePasswordSchema.safeParse({
+      oldPassword: 'current123',
+      newPassword: 'NoDigitsHere',
+      confirmPassword: 'NoDigitsHere',
     })
     expect(result.success).toBe(false)
   })

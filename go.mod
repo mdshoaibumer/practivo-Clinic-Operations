@@ -8,6 +8,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/wailsapp/wails/v2 v2.12.0
 	golang.org/x/crypto v0.33.0
+	golang.org/x/sys v0.30.0
 	gorm.io/gorm v1.25.10
 )
 
@@ -44,7 +45,6 @@ require (
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
 	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/libc v1.22.5 // indirect
