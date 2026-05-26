@@ -7,6 +7,8 @@ interface Notification {
   message?: string
 }
 
+let notificationCounter = 0
+
 interface UIState {
   sidebarCollapsed: boolean
   notifications: Notification[]
@@ -22,7 +24,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
   addNotification: (notification) => {
-    const id = Date.now().toString()
+    const id = `${Date.now()}-${++notificationCounter}`
     set((state) => ({
       notifications: [...state.notifications, { ...notification, id }],
     }))

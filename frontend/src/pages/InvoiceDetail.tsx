@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useInvoiceStore } from '@/store/invoiceStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { formatCurrency, formatDate, getStatusColor, rupeesToPaise, getTodayDate } from '@/lib/utils'
@@ -16,6 +17,7 @@ import type { WhatsAppMessageResult } from '@/types/api'
 export default function InvoiceDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { currentInvoice, isLoading, fetchInvoice, recordPayment } = useInvoiceStore()
   const { clinic, fetchSettings } = useSettingsStore()
   const [showPayment, setShowPayment] = useState(false)
@@ -52,6 +54,9 @@ export default function InvoiceDetail() {
       setShowPayment(false)
       setPaymentAmount('')
       setPaymentRef('')
+
+      // Invalidate billing list cache so it shows updated status
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
 
       // Prepare WhatsApp invoice message
       try {

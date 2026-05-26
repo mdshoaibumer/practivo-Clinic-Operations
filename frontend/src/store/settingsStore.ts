@@ -24,7 +24,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   checkSetup: async () => {
     try {
       const complete = await window.go.handler.SettingsHandler.IsSetupComplete()
-      set({ isSetupComplete: complete })
+      // Explicitly coerce to boolean — Wails may return non-boolean truthy values
+      const isComplete = complete === true
+      console.log('[Setup] IsSetupComplete returned:', complete, '→ coerced:', isComplete)
+      set({ isSetupComplete: isComplete })
     } catch (error) {
       console.error('Failed to check setup status:', error)
       set({ isSetupComplete: false })
